@@ -12,10 +12,12 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Setup CMake
-      uses: lukka/get-cmake@v1   # ✅ 修复了版本
+      uses: jwlawson/actions-setup-cmake@v1
+      with:
+        cmake-version: '3.26.4'
 
     - name: Configure and Build
       run: |
@@ -24,12 +26,8 @@ jobs:
         cmake ..
         cmake --build . --config Release
 
-    - name: Create zip package
-      run: |
-        powershell Compress-Archive -Path build/bin/veh_patch.dll -DestinationPath veh_patch.zip
-
-    - name: Upload artifact
-      uses: actions/upload-artifact@v4   # ✅ 修复了版本
+    - name: Upload DLL artifact
+      uses: actions/upload-artifact@v4
       with:
         name: veh_patch
-        path: veh_patch.zip
+        path: build/bin/veh_patch.dll
