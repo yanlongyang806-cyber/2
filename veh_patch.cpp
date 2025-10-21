@@ -1,6 +1,7 @@
 #include <windows.h>
 #include <iostream>
-#include <fstream>
+#include <string>    // ✅ 这一行是关键
+
 
 const DWORD64 TARGET_OFFSET = 0xE5EE7E; // 崩溃偏移地址
 DWORD64 g_ModuleBase = 0;
@@ -48,3 +49,4 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
     }
     return TRUE;
 }
+
