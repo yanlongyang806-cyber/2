@@ -1,7 +1,6 @@
 #include <windows.h>
 #include <fstream>
 #include <sstream>
-#include <string>
 
 void WriteLog(const std::string& msg) {
     std::ofstream logFile("veh_patch.log", std::ios::app);
@@ -11,46 +10,38 @@ void WriteLog(const std::string& msg) {
         logFile << "[" << st.wYear << "-" << st.wMonth << "-" << st.wDay << " "
                 << st.wHour << ":" << st.wMinute << ":" << st.wSecond << "] "
                 << msg << std::endl;
-        logFile.close();
     }
 }
 
-// 转换地址为 16 进制字符串
-std::string PtrToHexStr(DWORD64 ptr) {
+std::string HexStr(DWORD64 ptr) {
     std::stringstream ss;
     ss << "0x" << std::hex << ptr;
     return ss.str();
 }
 
 LONG CALLBACK VehHandler(EXCEPTION_POINTERS* ExceptionInfo) {
-    DWORD code = ExceptionInfo->ExceptionRecord->ExceptionCode;
-
-    if (code == EXCEPTION_ACCESS_VIOLATION) {
+    if (ExceptionInfo->ExceptionRecord->ExceptionCode == EXCEPTION_ACCESS_VIOLATION) {
         DWORD64 crashAddr = (DWORD64)ExceptionInfo->ExceptionRecord->ExceptionAddress;
-        WriteLog("[VEH] 捕获到访问异常，崩溃地址: " + PtrToHexStr(crashAddr));
 
-        // ✅ 判断是否空指针访问
-        ULONG_PTR faultAddr = ExceptionInfo->ExceptionRecord->ExceptionInformation[1];
-        if (faultAddr < 0x1000) {
-            WriteLog("[VEH] 检测到空指针访问，自动跳过此指令防止崩溃。");
-            ExceptionInfo->ContextRecord->Rip += 2; // 跳过当前指令
+        WriteLog("[VEH] 捕获访问异常 -> 地址: " + HexStr(crashAddr));
+
+        // ✅ 智能跳过：检测是否为 null 引用类指令
+        BYTE* instr = (BYTE*)crashAddr;
+        if (*instr == 0x48 || *instr == 0x8B || *instr == 0x89) { 
+            ExceptionInfo->ContextRecord->Rip += 2;
+            WriteLog("[VEH] 自动跳过异常指令，继续运行");
             return EXCEPTION_CONTINUE_EXECUTION;
         }
 
-        // ✅ 判断是否读写无效内存
-        WriteLog("[VEH] 检测到对无效内存访问，继续运行以避免宕机。");
-        ExceptionInfo->ContextRecord->Rip += 2;
-        return EXCEPTION_CONTINUE_EXECUTION;
+        WriteLog("[VEH] 未识别的异常，交给系统处理");
     }
-
     return EXCEPTION_CONTINUE_SEARCH;
 }
 
-BOOL APIENTRY DllMain(HMODULE hModule, DWORD reason, LPVOID lpReserved) {
+BOOL APIENTRY DllMain(HMODULE hModule, DWORD reason, LPVOID reserved) {
     if (reason == DLL_PROCESS_ATTACH) {
-        WriteLog("[DllMain] veh_patch.dll 已加载，安装全局 VEH 异常处理程序...");
         AddVectoredExceptionHandler(1, VehHandler);
-        WriteLog("[DllMain] VEH 异常捕获器已启动。");
+        WriteLog("[DllMain] veh_patch_smart.dll 已注入，自动异常防护启用");
     }
     return TRUE;
 }
