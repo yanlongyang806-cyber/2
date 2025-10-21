@@ -11,21 +11,44 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+    - name: Checkout repository
+      uses: actions/checkout@v3
 
-      - name: Setup CMake
-        uses: lukka/get-cmake@v3
+    - name: Setup CMake
+      uses: lukka/get-cmake@v3
 
-      - name: Configure and Build
-        run: |
-          mkdir build
-          cd build
-          cmake ..
-          cmake --build . --config Release
+    - name: Configure and Build
+      run: |
+        mkdir build
+        cd build
+        cmake ..
+        cmake --build . --config Release
 
-      - name: Upload DLL artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: veh_patch
-          path: build/bin/veh_patch.dll
+    - name: Create zip package
+      run: |
+        powershell Compress-Archive -Path build/bin/veh_patch.dll -DestinationPath veh_patch.zip
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: veh_patch
+        path: veh_patch.zip
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - name: Download artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: veh_patch
+        path: .
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: latest
+        name: VEH Patch Latest Build
+        files: veh_patch.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
