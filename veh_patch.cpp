@@ -1,3 +1,6 @@
+void WriteLog(const std::string& msg) {
+    std::ofstream logFile("veh_patch.log", std::ios::app);
+
 #include <windows.h>
 #include <iostream>
 #include <fstream>
@@ -52,3 +55,4 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
     }
     return TRUE;
 }
+
