@@ -1,26 +1,28 @@
-name: Build VEH Patch
+name: Build VEH Patch DLL
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
 
 jobs:
   build:
     runs-on: windows-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup MSBuild
-        uses: microsoft/setup-msbuild@v2
+      - name: Setup CMake
+        uses: lukka/get-cmake@v3
 
-      - name: Build DLL
-        run: msbuild veh_patch_project.sln /p:Configuration=Release
+      - name: Configure CMake
+        run: cmake -S . -B build
 
-      - name: Upload build artifacts
+      - name: Build with CMake
+        run: cmake --build build --config Release
+
+      - name: Upload DLL artifact
         uses: actions/upload-artifact@v4
         with:
           name: veh_patch_build
-          path: Release/
+          path: build/Release/
