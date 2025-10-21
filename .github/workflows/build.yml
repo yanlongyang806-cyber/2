@@ -31,3 +31,9 @@ jobs:
       with:
         name: veh_patch
         path: build/bin/veh_patch.dll
+        - name: Upload DLL artifact
+  uses: actions/upload-artifact@v4
+  with:
+    name: veh_patch
+    path: build/**/*.dll
+
